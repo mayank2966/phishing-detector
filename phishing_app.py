@@ -8,16 +8,16 @@ from urllib.parse import urlparse
 with open("phishing_model_final.pkl", "rb") as file:
     model = pickle.load(file)
 
-# VirusTotal API key from secrets
+# VirusTotal API
 API_KEY = st.secrets["VIRUSTOTAL_API_KEY"]
 VIRUSTOTAL_URL = "https://www.virustotal.com/api/v3/urls"
 
-# App UI
+# UI Setup
 st.title("🔍 Phishing URL Detector")
 st.markdown("Enter a URL to check if it's **Phishing or Legitimate** using **AI + VirusTotal**")
 url_input = st.text_input("Enter URL...")
 
-# Helper to check VirusTotal
+# ✅ Function to check with VirusTotal
 def check_virustotal(url):
     try:
         response = requests.post(
@@ -36,33 +36,32 @@ def check_virustotal(url):
             total = sum(results.values())
             confidence = round((malicious / total) * 100, 2) if total > 0 else 0
             return confidence
-    except:
-        pass
+    except Exception as e:
+        st.warning(f"VirusTotal lookup failed: {e}")
     return 0.0
 
-# Handle prediction
+# 🔍 Handle Prediction
 if st.button("🔍 Analyze"):
     if not url_input.strip():
         st.warning("⚠️ Please enter a URL.")
         st.stop()
 
     try:
+        # Feature extraction
         features = extract_features(url_input)
 
-        # Model Prediction
+        # Model prediction
         prediction = model.predict([features])[0]
-        model_conf = model.predict_proba([features])[0][1] * 100
+        model_conf = model.predict_proba([features])[0][1] * 100  # % phishing
 
-        # VirusTotal Confidence
+        # VirusTotal confidence
         vt_conf = check_virustotal(url_input)
+        vt_safe_score = 100 - vt_conf  # Higher is safer
 
-                # Adjusted VirusTotal confidence (invert so 0% malicious = 100% safe)
-        vt_safe_score = 100 - vt_conf
-
-        # Combined weighted confidence
+        # Weighted final confidence
         final_conf = round((0.6 * model_conf) + (0.4 * vt_safe_score), 2)
 
-        # Output
+        # 🧠 Final verdict
         st.subheader("Result:")
         if model_conf > 70 and vt_conf == 0:
             st.success("✅ This URL is likely **Legitimate**")
@@ -71,8 +70,7 @@ if st.button("🔍 Analyze"):
         else:
             st.warning("🔍 This URL appears **Suspicious** – needs further investigation")
 
-
-        # Confidence Display
+        # Confidence breakdown
         st.markdown(f"""
         #### 🔒 Confidence Meter (AI + VirusTotal)
         - 🤖 Model Confidence: `{round(model_conf, 2)}%`
@@ -81,4 +79,4 @@ if st.button("🔍 Analyze"):
         """)
 
     except Exception as e:
-        st.error(f"❌ Error: {e}")
+        st.error(f"❌ Error during analysis: {e}")
