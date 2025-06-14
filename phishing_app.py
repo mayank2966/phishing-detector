@@ -56,15 +56,21 @@ if st.button("🔍 Analyze"):
         # VirusTotal Confidence
         vt_conf = check_virustotal(url_input)
 
-        # Combined confidence
-        final_conf = round((model_conf + vt_conf) / 2, 2)
+                # Adjusted VirusTotal confidence (invert so 0% malicious = 100% safe)
+        vt_safe_score = 100 - vt_conf
+
+        # Combined weighted confidence
+        final_conf = round((0.6 * model_conf) + (0.4 * vt_safe_score), 2)
 
         # Output
         st.subheader("Result:")
-        if final_conf >= 70:
+        if model_conf > 70 and vt_conf == 0:
+            st.success("✅ This URL is likely **Legitimate**")
+        elif final_conf < 50:
             st.error("⚠️ This URL is likely **Phishing**")
         else:
-            st.success("✅ This URL is likely **Legitimate**")
+            st.warning("🔍 This URL appears **Suspicious** – needs further investigation")
+
 
         # Confidence Display
         st.markdown(f"""
