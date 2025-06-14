@@ -1,22 +1,31 @@
-import pickle
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-import pandas as pd
+from sklearn.metrics import accuracy_score
+import pickle
 
-# Load dataset
-df = pd.read_csv('phishing.csv')
+# Step 1: Load the new dataset
+df = pd.read_csv("phishing.csv")
 
-# Split into features and labels
-X = df.drop(['Index', 'class'], axis=1)
-y = df['class']
+# Step 2: Separate features and target label
+X = df.drop("phishing", axis=1)
+y = df["phishing"]
 
-# Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Step 3: Split the data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
-# Train model
+# Step 4: Train the model
 model = RandomForestClassifier()
 model.fit(X_train, y_train)
 
-# Save the model
-with open('phishing_model.pkl', 'wb') as file:
-    pickle.dump(model, file)
+# Step 5: Evaluate it (just to check)
+accuracy = accuracy_score(y_test, model.predict(X_test))
+print(f"✅ Model trained! Accuracy: {accuracy * 100:.2f}%")
+
+# Step 6: Save the model
+with open("phishing_model_final.pkl", "wb") as f:
+    pickle.dump(model, f)
+
+print("✅ Model saved as phishing_model_final.pkl")
